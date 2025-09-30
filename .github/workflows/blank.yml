@@ -1,0 +1,32 @@
+name: daily-activity
+
+on:
+  schedule:
+    # CRON in UTC; these roughly map to Kyiv UTC+3: 09:05, 15:22 (Mon–Fri), 21:17
+    - cron: "5 6 * * *"      # 09:05 Kyiv
+    - cron: "22 12 1-5 * *"  # 15:22 Kyiv, Mon–Fri
+    - cron: "17 18 * * *"    # 21:17 Kyiv
+  workflow_dispatch: {}       # manual run button
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate note
+        run: python3 scripts/generate_note.py
+
+      - name: Commit & push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore(notes): update $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            git push
+          fi
